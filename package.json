@@ -1,0 +1,21 @@
+{
+  "name": "wc-tool",
+  "version": "1.0.0",
+  "description": "WC (word count) tool is a utility used to count the number of words, characters, lines, and paragraphs in a given piece of text or document. It's a handy tool often used by writers, editors, students, and professionals who need to keep track of the length or size of their written content",
+  "scripts": {
+    "start": "tsc && node dist/main.js test.txt",
+    "size": "tsc && node dist/main.js -c test.txt",
+    "lines": "tsc && node dist/main.js -l test.txt",
+    "words": "tsc && node dist/main.js -w test.txt",
+    "characters": "tsc && node dist/main.js -m test.txt"
+  },
+  "author": "Sofiane Afir",
+  "license": "ISC",
+  "dependencies": {
+    "@commander-js/extra-typings": "^11.1.0",
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0"
+  }
+}
