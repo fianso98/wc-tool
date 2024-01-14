@@ -14,47 +14,17 @@ program.parse();
 const options = program.opts();
 const filePath = program.args[0];
 type ExecArray = Array<(data: any) => number>;
+enum InputType  {
+  STDIN,
+  ARGS
+}
 if (!filePath) {
-  perfomActionsBasedOnStdin();
+  perfomActionsBasedOnInputType(InputType.STDIN);
 } else {
-  performActionsBasedOnArgs();
+  perfomActionsBasedOnInputType(InputType.ARGS);
 }
-function perfomActionsBasedOnStdin() {
-  readStdin().then((data) => {
-    try {
-      if(
-        !options.c &&
-        !options.l &&
-        !options.w &&
-        !options.m 
-        ) {
-          console.log(countLines(data), countWords(data), getFileSize(data));
-      }
-      if (options.c) {
-        console.log(getFileSize(data));
-      } 
-      if (options.l) {
-       console.log(countLines(data));
-      } 
-      if (options.w) {
-        console.log(countWords(data));
-      }
-      if (options.m) {
-        const currentLocale = process.env.LANG || process.env.LANGUAGE;
-      
-        if (currentLocale && currentLocale.includes("UTF-8")) {
-          console.log(countCharacters(data));
-        } else {
-          console.log(getFileSize(data));
-        }
-      }
-      // Perform operations with data
-    } catch (error: any) {
-      console.error('Error parsing input:', error.message);
-    }
-  });
-}
-function performActionsBasedOnArgs() {
+
+async function perfomActionsBasedOnInputType(inputType: InputType) {
   let executionPipe : ExecArray = []; 
   if(
     !options.c &&
@@ -82,8 +52,15 @@ function performActionsBasedOnArgs() {
       executionPipe.push(getFileSize);
     }
   }
+  if (inputType === InputType.ARGS) {
+    readFileAndExec(filePath, executionPipe);
+  }
 
-  readFileAndExec(filePath, executionPipe);
+  if (inputType === InputType.STDIN) {
+    const fileContent = await readStdin();
+    console.log(...executionPipe.map((fn)=> fn(fileContent)));
+  }
+
 }
 
 function readFileAndExec(filePath: string, execArray: ExecArray) : void{

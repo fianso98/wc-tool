@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const extra_typings_1 = require("@commander-js/extra-typings");
 const fs = require('fs');
@@ -13,11 +22,52 @@ const program = new extra_typings_1.Command()
 program.parse();
 const options = program.opts();
 const filePath = program.args[0];
+var InputType;
+(function (InputType) {
+    InputType[InputType["STDIN"] = 0] = "STDIN";
+    InputType[InputType["ARGS"] = 1] = "ARGS";
+})(InputType || (InputType = {}));
 if (!filePath) {
-    perfomActionsBasedOnStdin();
+    perfomActionsBasedOnInputType(InputType.STDIN);
 }
 else {
-    performActionsBasedOnArgs();
+    perfomActionsBasedOnInputType(InputType.ARGS);
+}
+function perfomActionsBasedOnInputType(inputType) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let executionPipe = [];
+        if (!options.c &&
+            !options.l &&
+            !options.w &&
+            !options.m) {
+            executionPipe = [countLines, countWords, getFileSize];
+        }
+        if (options.c) {
+            executionPipe.push(getFileSize);
+        }
+        if (options.l) {
+            executionPipe.push(countLines);
+        }
+        if (options.w) {
+            executionPipe.push(countWords);
+        }
+        if (options.m) {
+            const currentLocale = process.env.LANG || process.env.LANGUAGE;
+            if (currentLocale && currentLocale.includes("UTF-8")) {
+                executionPipe.push(countCharacters);
+            }
+            else {
+                executionPipe.push(getFileSize);
+            }
+        }
+        if (inputType === InputType.ARGS) {
+            readFileAndExec(filePath, executionPipe);
+        }
+        if (inputType === InputType.STDIN) {
+            const fileContent = yield readStdin();
+            console.log(...executionPipe.map((fn) => fn(fileContent)));
+        }
+    });
 }
 function perfomActionsBasedOnStdin() {
     readStdin().then((data) => {
