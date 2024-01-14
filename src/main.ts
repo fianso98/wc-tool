@@ -4,7 +4,7 @@ const fs = require('fs');
 const program = new Command()
   .version('1.0.0')
   .description('The wc utility displays the number of lines, words, and bytes contained in each input file, or standard input (if no file is specified) to the standard output.  A line is defined as a string of characters delimited by a ⟨newline⟩ character.  Characters beyond the final ⟨newline⟩ character will not be included in the line count.')
-  .argument('<string>', 'file')
+  // .argument('<string>', 'file')
   .option('-c', 'The number of bytes in each input file is written to the standard output.')
   .option('-l', 'The number of lines in each input file is written to the standard output.')
   .option('-w', 'The number of words in each input file is written to the standard output.')
@@ -14,41 +14,83 @@ program.parse();
 const options = program.opts();
 const filePath = program.args[0];
 type ExecArray = Array<(data: any) => number>;
-let executionPipe : ExecArray = []; 
-if(
-  !options.c &&
-  !options.l &&
-  !options.w &&
-  !options.m 
-  ) {
-    executionPipe = [countLines,countWords, getFileSize];
+if (!filePath) {
+  perfomActionsBasedOnStdin();
+} else {
+  performActionsBasedOnArgs();
 }
-if (options.c) {
-  executionPipe.push(getFileSize);
-} 
-if (options.l) {
-  executionPipe.push(countLines);
-} 
-if (options.w) {
-  executionPipe.push(countWords);
+function perfomActionsBasedOnStdin() {
+  readStdin().then((data) => {
+    try {
+      if(
+        !options.c &&
+        !options.l &&
+        !options.w &&
+        !options.m 
+        ) {
+          console.log(countLines(data), countWords(data), getFileSize(data));
+      }
+      if (options.c) {
+        console.log(getFileSize(data));
+      } 
+      if (options.l) {
+       console.log(countLines(data));
+      } 
+      if (options.w) {
+        console.log(countWords(data));
+      }
+      if (options.m) {
+        const currentLocale = process.env.LANG || process.env.LANGUAGE;
+      
+        if (currentLocale && currentLocale.includes("UTF-8")) {
+          console.log(countCharacters(data));
+        } else {
+          console.log(getFileSize(data));
+        }
+      }
+      // Perform operations with data
+    } catch (error: any) {
+      console.error('Error parsing input:', error.message);
+    }
+  });
 }
-if (options.m) {
-  const currentLocale = process.env.LANG || process.env.LANGUAGE;
-
-  if (currentLocale && currentLocale.includes("UTF-8")) {
-    executionPipe.push(countCharacters);
-  } else {
-    executionPipe.push(getFileSize);
+function performActionsBasedOnArgs() {
+  let executionPipe : ExecArray = []; 
+  if(
+    !options.c &&
+    !options.l &&
+    !options.w &&
+    !options.m 
+    ) {
+      executionPipe = [countLines,countWords, getFileSize];
   }
-}
+  if (options.c) {
+    executionPipe.push(getFileSize);
+  } 
+  if (options.l) {
+    executionPipe.push(countLines);
+  } 
+  if (options.w) {
+    executionPipe.push(countWords);
+  }
+  if (options.m) {
+    const currentLocale = process.env.LANG || process.env.LANGUAGE;
 
-readFileAndExec(filePath, executionPipe);
+    if (currentLocale && currentLocale.includes("UTF-8")) {
+      executionPipe.push(countCharacters);
+    } else {
+      executionPipe.push(getFileSize);
+    }
+  }
+
+  readFileAndExec(filePath, executionPipe);
+}
 
 function readFileAndExec(filePath: string, execArray: ExecArray) : void{
   
     fs.readFile(filePath, 'utf-8', (err: any, data: any) => {
       if (err) {
-        console.error("Error getting file number of words", err);
+        console.error("Error reading file", err);
       }
       Promise.all(execArray.map((fn) => fn(data)))
       .then((value) => console.log(...value, filePath));
@@ -57,7 +99,7 @@ function readFileAndExec(filePath: string, execArray: ExecArray) : void{
   
 }
 function getFileSize(data: any): number {
-  return Buffer.from(data, 'utf-8').length;
+  return Buffer.from(data).length;
 }
 
 function countLines(data: any): number {  
@@ -80,4 +122,23 @@ function countCharacters(data: any) : number {
     characterCount += data[i].length;
   }
   return characterCount;
+}
+
+function readStdin(): Promise<string> {
+  return new Promise((resolve) => {
+    process.stdin.setEncoding('utf8');
+
+    let inputData = '';
+
+    process.stdin.on('readable', () => {
+      const chunk = process.stdin.read();
+      if (chunk !== null) {
+        inputData += chunk;
+      }
+    });
+
+    process.stdin.on('end', () => {
+      resolve(inputData);
+    });
+  });
 }

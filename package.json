@@ -7,7 +7,8 @@
     "size": "tsc && node dist/main.js -c test.txt",
     "lines": "tsc && node dist/main.js -l test.txt",
     "words": "tsc && node dist/main.js -w test.txt",
-    "characters": "tsc && node dist/main.js -m test.txt"
+    "characters": "tsc && node dist/main.js -m test.txt",
+    "executable": "tsc && pkg dist/main.js --targets node18-macos-x64 --output ccwc"
   },
   "author": "Sofiane Afir",
   "license": "ISC",
